@@ -1,13 +1,12 @@
-import { PLAYER_ANIMATION_KEYS } from '../../../../common/assets';
 import { DIRECTION } from '../../../../common/common';
 import { Direction } from '../../../../common/types';
 import { isArcadePhysicsBody } from '../../../../common/utils';
-import { Player } from '../../../../game-objects/player/player';
+import { CharacterGameObject } from '../../../../game-objects/common/character-game-object';
 import { BaseCharacterState } from './base-character-state';
 import { CHARACTER_STATES } from './character-states';
 
 export class MoveState extends BaseCharacterState {
-  constructor(gameObject: Player) {
+  constructor(gameObject: CharacterGameObject) {
     super(CHARACTER_STATES.MOVE_STATE, gameObject);
   }
 
@@ -19,11 +18,9 @@ export class MoveState extends BaseCharacterState {
     }
 
     if (controls.isUpDown) {
-      this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.WALK_UP, repeat: -1 }, true);
       this.#updateVelocity(false, -1);
       this.#updateDirection(DIRECTION.UP);
     } else if (controls.isDownDown) {
-      this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.WALK_DOWN, repeat: -1 }, true);
       this.#updateVelocity(false, 1);
       this.#updateDirection(DIRECTION.DOWN);
     } else {
@@ -35,16 +32,16 @@ export class MoveState extends BaseCharacterState {
     if (controls.isLeftDown) {
       this._gameObject.setFlipX(true);
       this.#updateVelocity(true, -1);
-      this.#updateDirection(DIRECTION.LEFT);
+
       if (!isMovingVertically) {
-        this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.WALK_SIDE, repeat: -1 }, true);
+        this.#updateDirection(DIRECTION.LEFT);
       }
     } else if (controls.isRightDown) {
       this._gameObject.setFlipX(false);
       this.#updateVelocity(true, 1);
-      this.#updateDirection(DIRECTION.RIGHT);
+
       if (!isMovingVertically) {
-        this._gameObject.play({ key: PLAYER_ANIMATION_KEYS.WALK_SIDE, repeat: -1 }, true);
+        this.#updateDirection(DIRECTION.RIGHT);
       }
     } else {
       this.#updateVelocity(true, 0);
@@ -73,5 +70,6 @@ export class MoveState extends BaseCharacterState {
 
   #updateDirection(direction: Direction): void {
     this._gameObject.direction = direction;
+    this._gameObject.animationComponent.playAnimation(`WALK_${this._gameObject.direction}`);
   }
 }
