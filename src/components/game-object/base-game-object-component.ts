@@ -10,7 +10,7 @@ export class BaseGameObjectComponent {
     this.gameObject = gameObject;
   }
 
-  static getcomponent<T>(gameObject: GameObject): T {
+  static getComponent<T>(gameObject: GameObject): T {
     return gameObject[`_${this.name}`] as T;
   }
 

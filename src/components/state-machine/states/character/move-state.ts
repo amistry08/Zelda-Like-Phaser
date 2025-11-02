@@ -1,7 +1,10 @@
-import { DIRECTION } from '../../../../common/common';
+import { DIRECTION, INTERACTIVE_OBJECT_TYPE } from '../../../../common/common';
 import { Direction } from '../../../../common/types';
-import { isArcadePhysicsBody } from '../../../../common/utils';
+import { exhaustiveGuard, isArcadePhysicsBody } from '../../../../common/utils';
 import { CharacterGameObject } from '../../../../game-objects/common/character-game-object';
+import { CollidingObjectsComponent } from '../../../game-object/colliding-objects-component';
+import { InteractiveObjectComponent } from '../../../game-object/interractive-object-component';
+import { InputComponent } from '../../../input/input-component';
 import { BaseCharacterState } from './base-character-state';
 import { CHARACTER_STATES } from './character-states';
 
@@ -15,6 +18,10 @@ export class MoveState extends BaseCharacterState {
 
     if (!controls.isLeftDown && !controls.isRightDown && !controls.isUpDown && !controls.isDownDown) {
       this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
+    }
+
+    if (this.#checkIfObjectWasInteractedWith(controls)) {
+      return;
     }
 
     if (controls.isUpDown) {
@@ -71,5 +78,40 @@ export class MoveState extends BaseCharacterState {
   #updateDirection(direction: Direction): void {
     this._gameObject.direction = direction;
     this._gameObject.animationComponent.playAnimation(`WALK_${this._gameObject.direction}`);
+  }
+
+  #checkIfObjectWasInteractedWith(controls: InputComponent): boolean {
+    const collideComponent = CollidingObjectsComponent.getComponent<CollidingObjectsComponent>(this._gameObject);
+
+    if (collideComponent === undefined || collideComponent.objects.length === 0) {
+      return false;
+    }
+
+    const collisionObject = collideComponent.objects[0];
+    const interactiveObjectComponent =
+      InteractiveObjectComponent.getComponent<InteractiveObjectComponent>(collisionObject);
+
+    if (interactiveObjectComponent === undefined) {
+      return false;
+    }
+
+    if (!controls.isActionKeyJustDown) {
+      return false;
+    }
+
+    if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.PICKUP) {
+      this.stateMachine.setState(CHARACTER_STATES.LIFT_STATE);
+      return true;
+    }
+
+    if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.OPEN) {
+      this.stateMachine.setState(CHARACTER_STATES.OPEN_CHEST_STATE);
+      return true;
+    }
+    if (interactiveObjectComponent.objectType === INTERACTIVE_OBJECT_TYPE.AUTO) {
+      return true;
+    }
+
+    exhaustiveGuard(interactiveObjectComponent.objectType);
   }
 }

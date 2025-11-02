@@ -8,11 +8,15 @@ import { Wisp } from '../game-objects/enemies/wisp';
 import { CharacterGameObject } from '../game-objects/common/character-game-object';
 import { DIRECTION } from '../common/common';
 import { PLAYER_START_MAX_HEALTH } from '../common/config';
+import { Pot } from '../game-objects/objects/pot';
+import { Chest } from '../game-objects/objects/chest';
+import { GameObject } from '../common/types';
 
 export class GameScene extends Phaser.Scene {
   #controls!: KeyboardComponent;
   #player!: Player;
   #enemyGroup!: Phaser.GameObjects.Group;
+  #blockingGroup!: Phaser.GameObjects.Group;
 
   constructor() {
     super({
@@ -52,6 +56,25 @@ export class GameScene extends Phaser.Scene {
       { runChildUpdate: true },
     );
 
+    this.#blockingGroup = this.add.group([
+      new Pot({
+        scene: this,
+        positon: { x: this.scale.width / 2 + 90, y: this.scale.height / 2 },
+      }),
+
+      new Chest({
+        scene: this,
+        positon: { x: this.scale.width / 2 - 90, y: this.scale.height / 2 },
+        requireBossKey: false,
+      }),
+
+      new Chest({
+        scene: this,
+        positon: { x: this.scale.width / 2 - 90, y: this.scale.height / 2 - 80 },
+        requireBossKey: true,
+      }),
+    ]);
+
     this.#registerColliders();
   }
   #registerColliders(): void {
@@ -64,5 +87,9 @@ export class GameScene extends Phaser.Scene {
       const enemyGameObject = enemy as CharacterGameObject;
       enemyGameObject.hit(this.#player.direction, 1);
     });
+    this.physics.add.collider(this.#player, this.#blockingGroup, (player, gameObject) => {
+      this.#player.collidedWithGameObject(gameObject as GameObject);
+    });
+    this.physics.add.collider(this.#enemyGroup, this.#blockingGroup, (enemy, gameObject) => {});
   }
 }

@@ -1,4 +1,4 @@
-export const ENABLE_LOGGING = true;
+export const ENABLE_LOGGING = false;
 
 export const PLAYER_SPEED = 80;
 export const PLAYER_INVULNERABLE_AFTER_HIT_ANIMATION_DURATION = 1000;
