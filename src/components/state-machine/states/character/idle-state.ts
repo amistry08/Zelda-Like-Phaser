@@ -9,8 +9,6 @@ export class IdleState extends BaseCharacterState {
   }
 
   onEnter(): void {
-    console.log(this._gameObject.direction);
-
     this._gameObject.animationComponent.playAnimation(`IDLE_${this._gameObject.direction}`);
 
     if (isArcadePhysicsBody(this._gameObject.body)) {

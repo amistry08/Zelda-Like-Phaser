@@ -4,11 +4,15 @@ import { ASSET_KEYS } from '../common/assets';
 import { KeyboardComponent } from '../components/input/keyboard-component';
 import { Player } from '../game-objects/player/player';
 import { Spider } from '../game-objects/enemies/spider';
+import { Wisp } from '../game-objects/enemies/wisp';
+import { CharacterGameObject } from '../game-objects/common/character-game-object';
+import { DIRECTION } from '../common/common';
+import { PLAYER_START_MAX_HEALTH } from '../common/config';
 
 export class GameScene extends Phaser.Scene {
   #controls!: KeyboardComponent;
   #player!: Player;
-  #spider!: Spider;
+  #enemyGroup!: Phaser.GameObjects.Group;
 
   constructor() {
     super({
@@ -30,16 +34,35 @@ export class GameScene extends Phaser.Scene {
       scene: this,
       position: { x: this.scale.width / 2, y: this.scale.height / 2 },
       controls: this.#controls,
+      maxLife: PLAYER_START_MAX_HEALTH,
+      currentLife: PLAYER_START_MAX_HEALTH,
     });
 
-    this.#spider = new Spider({
-      scene: this,
-      position: { x: this.scale.width / 2, y: this.scale.height / 2 + 50 },
-    });
-    this.#spider.setCollideWorldBounds(true);
+    this.#enemyGroup = this.add.group(
+      [
+        new Spider({
+          scene: this,
+          position: { x: this.scale.width / 2, y: this.scale.height / 2 + 50 },
+        }),
+        new Wisp({
+          scene: this,
+          position: { x: this.scale.width / 2, y: this.scale.height / 2 - 50 },
+        }),
+      ],
+      { runChildUpdate: true },
+    );
+
+    this.#registerColliders();
   }
-
-  public update(): void {
-    this.#spider.update();
+  #registerColliders(): void {
+    this.#enemyGroup.getChildren().forEach((enemy) => {
+      const eneryGameObject = enemy as CharacterGameObject;
+      eneryGameObject.setCollideWorldBounds(true);
+    });
+    this.physics.add.overlap(this.#player, this.#enemyGroup, (player, enemy) => {
+      this.#player.hit(DIRECTION.DOWN, 1);
+      const enemyGameObject = enemy as CharacterGameObject;
+      enemyGameObject.hit(this.#player.direction, 1);
+    });
   }
 }
