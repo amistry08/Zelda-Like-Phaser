@@ -11,7 +11,6 @@ export class OpenChestState extends BaseCharacterState {
 
   onEnter(args: unknown[]): void {
     const chest = args[0] as Chest;
-    console.log(chest);
 
     if (isArcadePhysicsBody(this._gameObject.body)) {
       this._gameObject.body.velocity.x = 0;

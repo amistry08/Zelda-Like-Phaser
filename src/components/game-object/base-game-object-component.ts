@@ -8,6 +8,7 @@ export class BaseGameObjectComponent {
   constructor(gameObject: GameObject) {
     this.scene = gameObject.scene;
     this.gameObject = gameObject;
+    this.assignComponentToObject(gameObject);
   }
 
   static getComponent<T>(gameObject: GameObject): T {

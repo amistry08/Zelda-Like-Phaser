@@ -80,8 +80,6 @@ export class Player extends CharacterGameObject {
       currentLife: config.currentLife,
     });
 
-    this.#collingObjectsComponent = new CollidingObjectsComponent(this);
-
     this._stateMachine.addState(new IdleState(this));
     this._stateMachine.addState(new MoveState(this));
     this._stateMachine.addState(
@@ -95,6 +93,8 @@ export class Player extends CharacterGameObject {
     this._stateMachine.addState(new IdleHoldingState(this));
     this._stateMachine.addState(new MoveHoldingState(this));
     this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
+
+    this.#collingObjectsComponent = new CollidingObjectsComponent(this);
 
     config.scene.events.on(Phaser.Scenes.Events.UPDATE, this.update, this);
     config.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -113,7 +113,6 @@ export class Player extends CharacterGameObject {
 
   public update(): void {
     super.update();
-    console.log(this.#collingObjectsComponent.objects);
     this.#collingObjectsComponent.reset();
   }
 }
