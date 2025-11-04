@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { Direction } from './types';
+import { CustomGameObject, Direction, GameObject } from './types';
 import { DIRECTION } from './common';
 
 /**
@@ -24,4 +24,8 @@ export function isArcadePhysicsBody(
 
 export function isDirection(direction: string): direction is Direction {
   return DIRECTION[direction] !== undefined;
+}
+
+export function isCustomGameObject(gameObject: GameObject): gameObject is GameObject & CustomGameObject {
+  return gameObject['disableObject'] !== undefined && gameObject['enableObject'] !== undefined;
 }

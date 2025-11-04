@@ -20,6 +20,8 @@ import { LiftState } from '../../components/state-machine/states/character/lift-
 import { OpenChestState } from '../../components/state-machine/states/character/open-chest-state';
 import { IdleHoldingState } from '../../components/state-machine/states/character/idle-holding-state';
 import { MoveHoldingState } from '../../components/state-machine/states/character/move-holding-state';
+import { HeldGameObjectComponent } from '../../components/game-object/held-game-object-component';
+import { ThrowState } from '../../components/state-machine/states/character/throw-state';
 
 export type PlayerConfig = {
   scene: Phaser.Scene;
@@ -92,9 +94,11 @@ export class Player extends CharacterGameObject {
     this._stateMachine.addState(new OpenChestState(this));
     this._stateMachine.addState(new IdleHoldingState(this));
     this._stateMachine.addState(new MoveHoldingState(this));
+    this._stateMachine.addState(new ThrowState(this));
     this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
 
     this.#collingObjectsComponent = new CollidingObjectsComponent(this);
+    new HeldGameObjectComponent(this);
 
     config.scene.events.on(Phaser.Scenes.Events.UPDATE, this.update, this);
     config.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {

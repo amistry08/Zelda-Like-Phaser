@@ -30,5 +30,12 @@ export class PreloadScene extends Phaser.Scene {
       repeat: 0,
       delay: 0,
     });
+    this.anims.create({
+      key: ASSET_KEYS.POT_BREAK,
+      frames: this.anims.generateFrameNames(ASSET_KEYS.POT_BREAK),
+      frameRate: 6,
+      repeat: 0,
+      delay: 0,
+    });
   }
 }

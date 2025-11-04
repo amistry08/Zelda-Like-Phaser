@@ -42,6 +42,27 @@ export class AnimationComponent extends BaseGameObjectComponent {
     this.gameObject.play(animationConfig, this.#config[characterAnimation].ignoreIfPlaying);
   }
 
+  public playAnimationInReverse(characterAnimation: CharacterAnimation, callback?: () => void): void {
+    if (this.#config[characterAnimation] === undefined) {
+      if (callback) {
+        callback();
+      }
+      return;
+    }
+    const animationConfig: Phaser.Types.Animations.PlayAnimationConfig = {
+      key: this.#config[characterAnimation].key,
+      repeat: this.#config[characterAnimation].repeat,
+      timeScale: 1.75,
+    };
+    const animationKey = Phaser.Animations.Events.ANIMATION_COMPLETE_KEY + this.#config[characterAnimation].key;
+    if (callback) {
+      this.gameObject.once(animationKey, () => {
+        callback();
+      });
+    }
+    this.gameObject.playReverse(animationConfig, this.#config[characterAnimation].ignoreIfPlaying);
+  }
+
   public isAnimationPlaying(): boolean {
     return this.gameObject.anims.isPlaying;
   }

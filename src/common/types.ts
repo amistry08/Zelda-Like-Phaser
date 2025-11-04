@@ -16,3 +16,8 @@ export type Direction = keyof typeof DIRECTION;
 export type ChestState = keyof typeof CHEST_STATE;
 
 export type InteractiveObjectType = keyof typeof INTERACTIVE_OBJECT_TYPE;
+
+export interface CustomGameObject {
+  enableObject(): void;
+  disableObject(): void;
+}

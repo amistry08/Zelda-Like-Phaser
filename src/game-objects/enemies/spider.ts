@@ -72,7 +72,7 @@ export class Spider extends CharacterGameObject {
     this._stateMachine.addState(new MoveState(this));
     this._stateMachine.addState(new HurtState(this, ENEMY_SPIDER_HURT_PUSH_BACK_SPEED));
     this._stateMachine.addState(new DeathState(this));
-    this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
+    //this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
 
     this.scene.time.addEvent({
       delay: Phaser.Math.Between(ENEMY_SPIDER_CHANGE_DIRECTION_DELAY_MIN, ENEMY_SPIDER_CHANGE_DIRECTION_DELAY_MAX),

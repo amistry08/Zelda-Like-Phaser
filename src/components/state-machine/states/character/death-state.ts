@@ -1,6 +1,7 @@
 import { CHARACTER_ANIMATIONS } from '../../../../common/assets';
-import { isArcadePhysicsBody } from '../../../../common/utils';
 import { CharacterGameObject } from '../../../../game-objects/common/character-game-object';
+import { HeldGameObjectComponent } from '../../../game-object/held-game-object-component';
+import { ThrowableObjectComponent } from '../../../game-object/throwable-object-component';
 import { BaseCharacterState } from './base-character-state';
 import { CHARACTER_STATES } from './character-states';
 
@@ -13,9 +14,17 @@ export class DeathState extends BaseCharacterState {
   }
 
   onEnter(): void {
-    if (isArcadePhysicsBody(this._gameObject.body)) {
-      this._gameObject.body.velocity.x = 0;
-      this._gameObject.body.velocity.y = 0;
+    this._resetObjectVelocity();
+
+    const heldComponent = HeldGameObjectComponent.getComponent<HeldGameObjectComponent>(this._gameObject);
+    if (heldComponent !== undefined && heldComponent.object !== undefined) {
+      const throwObjectComponent = ThrowableObjectComponent.getComponent<ThrowableObjectComponent>(
+        heldComponent.object,
+      );
+      if (throwObjectComponent !== undefined) {
+        throwObjectComponent.drop();
+      }
+      heldComponent.drop();
     }
     this._gameObject.invulnerableComponent.invulnerable = true;
     (this._gameObject.body as Phaser.Physics.Arcade.Body).enable = false;
