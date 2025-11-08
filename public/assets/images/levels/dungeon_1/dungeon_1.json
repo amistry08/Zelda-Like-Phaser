@@ -1840,7 +1840,7 @@
                     {
                       "name": "targetLevel",
                       "type": "string",
-                      "value": "world"
+                      "value": "WORLD"
                     },
                     {
                       "name": "targetRoomId",

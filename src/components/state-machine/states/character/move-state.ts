@@ -17,6 +17,7 @@ export class MoveState extends BaseMoveState {
 
     if (this.isNoInputComponent(controls)) {
       this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
+      return;
     }
 
     if (this.#checkIfObjectWasInteractedWith(controls)) {
