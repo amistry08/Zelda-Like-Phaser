@@ -1,12 +1,12 @@
 import * as Phaser from 'phaser';
 import { SCENE_KEYS } from './scene-keys';
-import { ASSET_KEYS } from '../common/assets';
+import { ASSET_KEYS, CHEST_REWARD_TO_TEXTURE_FRAME } from '../common/assets';
 import { KeyboardComponent } from '../components/input/keyboard-component';
 import { Player } from '../game-objects/player/player';
 import { Spider } from '../game-objects/enemies/spider';
 import { Wisp } from '../game-objects/enemies/wisp';
 import { CharacterGameObject } from '../game-objects/common/character-game-object';
-import { DIRECTION } from '../common/common';
+import { DIRECTION, LEVEL_NAME } from '../common/common';
 import * as CONFIG from '../common/config';
 import { Pot } from '../game-objects/objects/pot';
 import { Chest } from '../game-objects/objects/chest';
@@ -19,7 +19,14 @@ import {
   isLevelName,
 } from '../common/utils';
 import { TiledRoomObject } from '../common/tiled/types';
-import { DOOR_TYPE, TILED_LAYER_NAMES, TILED_TILESET_NAMES } from '../common/tiled/common';
+import {
+  CHEST_REWARD,
+  DOOR_TYPE,
+  SWITCH_ACTION,
+  TILED_LAYER_NAMES,
+  TILED_TILESET_NAMES,
+  TRAP_TYPE,
+} from '../common/tiled/common';
 import {
   getAllLayerNamesWithPrefix,
   getTiledChestObjectsFromMap,
@@ -31,6 +38,7 @@ import {
 } from '../common/tiled/tiled-utils';
 import { Door } from '../game-objects/objects/door';
 import { Button } from '../game-objects/objects/button';
+import { InventoryManager } from '../components/inventory/inventory-manager';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -42,7 +50,7 @@ export class GameScene extends Phaser.Scene {
       chestMap: { [key: number]: Chest };
       doorMap: { [key: number]: Door };
       doors: Door[];
-      switches: unknown[];
+      switches: Button[];
       pots: Pot[];
       chests: Chest[];
       enemyGroup: Phaser.GameObjects.Group;
@@ -55,6 +63,7 @@ export class GameScene extends Phaser.Scene {
   #currentRoomId!: number;
   #lockedDoorGroup!: Phaser.GameObjects.Group;
   #switchGroup!: Phaser.GameObjects.Group;
+  #rewardItem!: Phaser.GameObjects.Image;
 
   constructor() {
     super({
@@ -81,6 +90,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.#setupPlayer();
     this.#setupCamera();
+    this.#rewardItem = this.add.image(0, 0, ASSET_KEYS.UI_ICONS, 0).setVisible(false).setOrigin(0, 1);
 
     this.#registerColliders();
     this.#registerCustomEvents();
@@ -95,12 +105,12 @@ export class GameScene extends Phaser.Scene {
       this.#handleRoomTransition(doorObj as Phaser.Types.Physics.Arcade.GameObjectWithBody);
     });
 
-    this.physics.add.overlap(this.#player, this.#switchGroup, (playerObj, switchObj) => {
-      this.#handleButtonPress(switchObj as Button);
-    });
-
     this.physics.add.collider(this.#player, this.#blockingGroup, (player, gameObject) => {
       this.#player.collidedWithGameObject(gameObject as GameObject);
+    });
+
+    this.physics.add.overlap(this.#player, this.#switchGroup, (playerObj, switchObj) => {
+      this.#handleButtonPress(switchObj as Button);
     });
 
     Object.keys(this.#objectsByRoomId).forEach((key) => {
@@ -165,13 +175,35 @@ export class GameScene extends Phaser.Scene {
 
   #registerCustomEvents(): void {
     EVENT_BUS.on(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
+    EVENT_BUS.on(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkAllEnemiesAreDefeated, this);
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EVENT_BUS.off(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
+      EVENT_BUS.off(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkAllEnemiesAreDefeated, this);
     });
   }
 
   #handleOpenChest(chest: Chest): void {
-    console.log('open chest');
+    if (chest.contents !== CHEST_REWARD.NOTHING) {
+      InventoryManager.instance.addDungeonItem(this.#levelData.level, chest.contents);
+    }
+
+    this.#rewardItem
+      .setFrame(CHEST_REWARD_TO_TEXTURE_FRAME[chest.contents])
+      .setVisible(true)
+      .setPosition(chest.x, chest.y);
+
+    this.tweens.add({
+      targets: this.#rewardItem,
+      y: this.#rewardItem.y - 16,
+      duration: 500,
+      onComplete: () => {
+        this.time.delayedCall(1000, () => {
+          this.#rewardItem.setVisible(false);
+        });
+        console.log(InventoryManager.instance.getAreaInventory(LEVEL_NAME.DUNGEON_1));
+      },
+    });
   }
 
   #createLevel(): void {
@@ -233,7 +265,7 @@ export class GameScene extends Phaser.Scene {
 
   #setupCamera(): void {
     const roomsize = this.#objectsByRoomId[this.#levelData.roomId].room;
-    this.cameras.main.setBounds(roomsize.x, roomsize.y - roomsize.height, roomsize.width, roomsize.width);
+    this.cameras.main.setBounds(roomsize.x, roomsize.y - roomsize.height, roomsize.width, roomsize.height);
     this.cameras.main.startFollow(this.#player);
   }
 
@@ -446,6 +478,7 @@ export class GameScene extends Phaser.Scene {
       onComplete: () => {
         targetDoor.enableObject();
         this.#currentRoomId = targetDoor.roomId;
+        this.#checkAllEnemiesAreDefeated();
         this.cameras.main.startFollow(this.#player);
         this.#controls.isMovementLocked = false;
       },
@@ -453,6 +486,55 @@ export class GameScene extends Phaser.Scene {
   }
 
   #handleButtonPress(button: Button): void {
-    console.log(button);
+    const buttonPressData = button.press();
+    if (buttonPressData.targetIds.length === 0 || buttonPressData.action === SWITCH_ACTION.NOTHING) {
+      return;
+    }
+    switch (buttonPressData.action) {
+      case SWITCH_ACTION.OPEN_DOOR:
+        buttonPressData.targetIds.forEach((id) => this.#objectsByRoomId[this.#currentRoomId].doorMap[id].open());
+        break;
+      case SWITCH_ACTION.REVEAL_CHEST:
+        buttonPressData.targetIds.forEach((id) => this.#objectsByRoomId[this.#currentRoomId].chestMap[id].reveal());
+        break;
+      case SWITCH_ACTION.REVEAL_KEY:
+        break;
+      default:
+        exhaustiveGuard(buttonPressData.action);
+    }
+  }
+
+  #checkAllEnemiesAreDefeated(): void {
+    const enemyGroup = this.#objectsByRoomId[this.#currentRoomId].enemyGroup;
+    if (enemyGroup === undefined) {
+      return;
+    }
+    const allRequiredEnemiesDefeated = enemyGroup.getChildren().every((child) => {
+      if (!child.active) {
+        return true;
+      }
+      if (child instanceof Wisp) {
+        return true;
+      }
+      return false;
+    });
+
+    if (allRequiredEnemiesDefeated) {
+      this.#handleAllEnemiesDefeated();
+    }
+  }
+
+  #handleAllEnemiesDefeated(): void {
+    this.#objectsByRoomId[this.#currentRoomId].chests.forEach((chest) => {
+      if (chest.revealTrigger === TRAP_TYPE.ENEMIES_DEFEATED) {
+        chest.reveal();
+      }
+    });
+
+    this.#objectsByRoomId[this.#currentRoomId].doors.forEach((door) => {
+      if (door.trapDoorTrigger === TRAP_TYPE.ENEMIES_DEFEATED) {
+        door.open();
+      }
+    });
   }
 }
