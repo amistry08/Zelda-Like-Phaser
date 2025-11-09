@@ -3,10 +3,13 @@ import { SCENE_KEYS } from './scene-keys';
 import { ASSET_KEYS, HEART_ANIMATIONS, HEART_TEXTURE_FRAME } from '../common/assets';
 import { DataManager } from '../common/data-manger';
 import { CUSTOM_EVENTS, EVENT_BUS, PLAYER_HEALTH_UPDATE_TYPE, PlayerHealthUpdated } from '../common/event-bus';
+import { DEFAULT_UI_TEXT_STYLE } from '../common/common';
 
 export class UiScene extends Phaser.Scene {
   #hunContainer!: Phaser.GameObjects.Container;
   #hearts!: Phaser.GameObjects.Sprite[];
+  #dialogContainer!: Phaser.GameObjects.Container;
+  #dailogContainerText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({
@@ -42,9 +45,16 @@ export class UiScene extends Phaser.Scene {
     }
     this.#hunContainer.add(this.#hearts);
 
+    this.#dialogContainer = this.add.container(32, 142, [this.add.image(0, 0, ASSET_KEYS.UI_DIALOG, 0).setOrigin(0)]);
+    this.#dailogContainerText = this.add.text(14, 14, '', DEFAULT_UI_TEXT_STYLE).setOrigin(0);
+    this.#dialogContainer.add(this.#dailogContainerText);
+    this.#dialogContainer.visible = false;
+
     EVENT_BUS.on(CUSTOM_EVENTS.PLAYER_HEALTH_UPDATED, this.updateHealthInHud, this);
+    EVENT_BUS.on(CUSTOM_EVENTS.SHOW_DIALOG, this.showDialog, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EVENT_BUS.off(CUSTOM_EVENTS.PLAYER_HEALTH_UPDATED, this.updateHealthInHud, this);
+      EVENT_BUS.off(CUSTOM_EVENTS.SHOW_DIALOG, this.showDialog, this);
     });
   }
 
@@ -70,5 +80,15 @@ export class UiScene extends Phaser.Scene {
       });
       health -= 1;
     }
+  }
+
+  public showDialog(messsage: string): void {
+    this.#dialogContainer.visible = true;
+    this.#dailogContainerText.setText(messsage);
+
+    this.time.delayedCall(3000, () => {
+      this.#dialogContainer.visible = false;
+      EVENT_BUS.emit(CUSTOM_EVENTS.DIALOG_CLOSE);
+    });
   }
 }

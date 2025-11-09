@@ -6,7 +6,7 @@ import { Player } from '../game-objects/player/player';
 import { Spider } from '../game-objects/enemies/spider';
 import { Wisp } from '../game-objects/enemies/wisp';
 import { CharacterGameObject } from '../game-objects/common/character-game-object';
-import { DIRECTION, LEVEL_NAME } from '../common/common';
+import { CHEST_REWARD_TO_DIALOG_MAP, DIRECTION, LEVEL_NAME } from '../common/common';
 import * as CONFIG from '../common/config';
 import { Pot } from '../game-objects/objects/pot';
 import { Chest } from '../game-objects/objects/chest';
@@ -231,11 +231,13 @@ export class GameScene extends Phaser.Scene {
     EVENT_BUS.on(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
     EVENT_BUS.on(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkAllEnemiesAreDefeated, this);
     EVENT_BUS.on(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
+    EVENT_BUS.on(CUSTOM_EVENTS.DIALOG_CLOSE, this.#handleDialogClose, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EVENT_BUS.off(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
       EVENT_BUS.off(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkAllEnemiesAreDefeated, this);
       EVENT_BUS.off(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
+      EVENT_BUS.off(CUSTOM_EVENTS.DIALOG_CLOSE, this.#handleDialogClose, this);
     });
   }
 
@@ -256,10 +258,8 @@ export class GameScene extends Phaser.Scene {
       y: this.#rewardItem.y - 16,
       duration: 500,
       onComplete: () => {
-        this.time.delayedCall(1000, () => {
-          this.#rewardItem.setVisible(false);
-        });
-        console.log(InventoryManager.instance.getAreaInventory(LEVEL_NAME.DUNGEON_1));
+        EVENT_BUS.emit(CUSTOM_EVENTS.SHOW_DIALOG, CHEST_REWARD_TO_DIALOG_MAP[chest.contents]);
+        this.scene.pause();
       },
     });
   }
@@ -665,5 +665,10 @@ export class GameScene extends Phaser.Scene {
       this.scene.start(SCENE_KEYS.GAME_OVER_SCENE);
     });
     this.cameras.main.fadeOut(1000, 0, 0, 0);
+  }
+
+  #handleDialogClose(): void {
+    this.#rewardItem.setVisible(false);
+    this.scene.resume();
   }
 }

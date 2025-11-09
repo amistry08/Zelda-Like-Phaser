@@ -15,7 +15,9 @@ export class OpenChestState extends BaseCharacterState {
     this._resetObjectVelocity();
     this._gameObject.animationComponent.playAnimation(`LIFT_${this._gameObject.direction}`, () => {
       EVENT_BUS.emit(CUSTOM_EVENTS.OPENED_CHEST, chest);
-      this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
+      EVENT_BUS.once(CUSTOM_EVENTS.DIALOG_CLOSE, () => {
+        this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
+      });
     });
   }
 }
