@@ -5,8 +5,8 @@ import { DataManager } from '../common/data-manger';
 import { CUSTOM_EVENTS, EVENT_BUS, PLAYER_HEALTH_UPDATE_TYPE, PlayerHealthUpdated } from '../common/event-bus';
 
 export class UiScene extends Phaser.Scene {
-  #hunContainer: Phaser.GameObjects.Container;
-  #hearts: Phaser.GameObjects.Sprite[];
+  #hunContainer!: Phaser.GameObjects.Container;
+  #hearts!: Phaser.GameObjects.Sprite[];
 
   constructor() {
     super({
