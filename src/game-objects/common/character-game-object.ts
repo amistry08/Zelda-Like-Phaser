@@ -75,14 +75,13 @@ export class CharacterGameObject extends Phaser.Physics.Arcade.Sprite implements
     this._isPlayer = isPlayer;
     this._isDefeated = false;
 
-    config.scene.events.on(Phaser.Scenes.Events.UPDATE, this.update, this);
-    config.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      config.scene.events.off(Phaser.Scenes.Events.UPDATE, this.update, this);
-    });
+    if (!this._isPlayer) {
+      this.disableObject();
+    }
   }
 
   get isDefeated(): boolean {
-    return this.isDefeated;
+    return this._isDefeated;
   }
 
   get isEnemy(): boolean {
@@ -111,6 +110,10 @@ export class CharacterGameObject extends Phaser.Physics.Arcade.Sprite implements
 
   get invulnerableComponent(): InvulnerableComponent {
     return this._invulnerableComponent;
+  }
+
+  get stateMachine(): StateMachine {
+    return this._stateMachine;
   }
 
   public update(): void {

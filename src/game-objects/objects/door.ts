@@ -78,6 +78,8 @@ export class Door implements CustomGameObject {
       }
       this.#doorObject = door;
     }
+
+    this.disableObject();
   }
 
   get x(): number {

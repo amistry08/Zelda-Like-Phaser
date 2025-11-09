@@ -5,6 +5,7 @@ import { IdleState } from '../../components/state-machine/states/character/idle-
 import { CHARACTER_STATES } from '../../components/state-machine/states/character/character-states';
 import { MoveState } from '../../components/state-machine/states/character/move-state';
 import {
+  PLAYER_ATTACK_DAMAGE,
   PLAYER_HURT_PUSH_BACK_SPEED,
   PLAYER_INVULNERABLE_AFTER_HIT_ANIMATION_DURATION,
   PLAYER_SPEED,
@@ -22,6 +23,9 @@ import { IdleHoldingState } from '../../components/state-machine/states/characte
 import { MoveHoldingState } from '../../components/state-machine/states/character/move-holding-state';
 import { HeldGameObjectComponent } from '../../components/game-object/held-game-object-component';
 import { ThrowState } from '../../components/state-machine/states/character/throw-state';
+import { AttackState } from '../../components/state-machine/states/character/attack-state';
+import { WeaponComponent } from '../../components/game-object/weapon-component';
+import { Sword } from '../weapons/sword';
 
 export type PlayerConfig = {
   scene: Phaser.Scene;
@@ -33,6 +37,7 @@ export type PlayerConfig = {
 
 export class Player extends CharacterGameObject {
   #collingObjectsComponent: CollidingObjectsComponent;
+  #weaponComponent: WeaponComponent;
 
   constructor(config: PlayerConfig) {
     const animationConfig: AnimationConfig = {
@@ -95,10 +100,23 @@ export class Player extends CharacterGameObject {
     this._stateMachine.addState(new IdleHoldingState(this));
     this._stateMachine.addState(new MoveHoldingState(this));
     this._stateMachine.addState(new ThrowState(this));
+    this._stateMachine.addState(new AttackState(this));
     this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
 
     this.#collingObjectsComponent = new CollidingObjectsComponent(this);
     new HeldGameObjectComponent(this);
+    this.#weaponComponent = new WeaponComponent(this);
+    this.#weaponComponent.weapon = new Sword(
+      this,
+      this.#weaponComponent,
+      {
+        DOWN: PLAYER_ANIMATION_KEYS.SWORD_1_ATTACK_DOWN,
+        UP: PLAYER_ANIMATION_KEYS.SWORD_1_ATTACK_UP,
+        LEFT: PLAYER_ANIMATION_KEYS.SWORD_1_ATTACK_SIDE,
+        RIGHT: PLAYER_ANIMATION_KEYS.SWORD_1_ATTACK_SIDE,
+      },
+      PLAYER_ATTACK_DAMAGE,
+    );
 
     config.scene.events.on(Phaser.Scenes.Events.UPDATE, this.update, this);
     config.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -115,8 +133,13 @@ export class Player extends CharacterGameObject {
     this.#collingObjectsComponent.add(gameObject);
   }
 
+  get weaponComponent(): WeaponComponent {
+    return this.#weaponComponent;
+  }
+
   public update(): void {
     super.update();
     this.#collingObjectsComponent.reset();
+    this.#weaponComponent.update();
   }
 }

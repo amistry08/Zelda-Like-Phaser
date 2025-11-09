@@ -15,6 +15,11 @@ export class MoveState extends BaseMoveState {
   onUpdate(): void {
     const controls = this._gameObject.controls;
 
+    if (controls.isAttackKeyJustDown) {
+      this._stateMachine.setState(CHARACTER_STATES.ATTACK_STATE);
+      return;
+    }
+
     if (this.isNoInputComponent(controls)) {
       this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
       return;

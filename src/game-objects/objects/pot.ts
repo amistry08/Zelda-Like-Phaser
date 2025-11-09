@@ -22,6 +22,8 @@ export class Pot extends Phaser.Physics.Arcade.Sprite implements CustomGameObjec
     new ThrowableObjectComponent(this, () => {
       this.break();
     });
+
+    this.disableObject();
   }
 
   public disableObject(): void {
@@ -42,6 +44,13 @@ export class Pot extends Phaser.Physics.Arcade.Sprite implements CustomGameObjec
     this.once(Phaser.Animations.Events.ANIMATION_COMPLETE_KEY + ASSET_KEYS.POT_BREAK, () => {
       this.setTexture(ASSET_KEYS.POT, 0);
       this.disableObject();
+    });
+  }
+
+  public resetPosition(): void {
+    this.scene.time.delayedCall(1, () => {
+      this.setPosition(this.#position.x, this.#position.y).setOrigin(0, 1);
+      this.enableObject();
     });
   }
 }

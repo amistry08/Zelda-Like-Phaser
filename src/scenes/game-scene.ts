@@ -39,6 +39,8 @@ import {
 import { Door } from '../game-objects/objects/door';
 import { Button } from '../game-objects/objects/button';
 import { InventoryManager } from '../components/inventory/inventory-manager';
+import { CHARACTER_STATES } from '../components/state-machine/states/character/character-states';
+import { WeaponComponent } from '../components/game-object/weapon-component';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -88,6 +90,8 @@ export class GameScene extends Phaser.Scene {
       console.warn('Missing collison layer for game.');
       return;
     }
+
+    this.#showObjectRoomById(this.#levelData.roomId);
     this.#setupPlayer();
     this.#setupCamera();
     this.#rewardItem = this.add.image(0, 0, ASSET_KEYS.UI_ICONS, 0).setVisible(false).setOrigin(0, 1);
@@ -113,6 +117,26 @@ export class GameScene extends Phaser.Scene {
       this.#handleButtonPress(switchObj as Button);
     });
 
+    this.physics.add.collider(this.#player, this.#lockedDoorGroup, (player, gameObject) => {
+      const doorObject = gameObject as Phaser.Types.Physics.Arcade.GameObjectWithBody;
+      const door = this.#objectsByRoomId[this.#currentRoomId].doorMap[doorObject.name] as Door;
+      if (door.doorType !== DOOR_TYPE.LOCK && door.doorType !== DOOR_TYPE.BOSS) {
+        return;
+      }
+      const areaInventory = InventoryManager.instance.getAreaInventory(this.#levelData.level);
+      if (door.doorType === DOOR_TYPE.LOCK) {
+        if (areaInventory.keys > 0) {
+          InventoryManager.instance.useAreaSmallKey(this.#levelData.level);
+          door.open();
+        }
+        return;
+      }
+      if (!areaInventory.bossKey) {
+        return;
+      }
+      door.open();
+    });
+
     Object.keys(this.#objectsByRoomId).forEach((key) => {
       const roomId = parseInt(key, 10);
       if (this.#objectsByRoomId[roomId] === undefined) {
@@ -121,10 +145,8 @@ export class GameScene extends Phaser.Scene {
       if (this.#objectsByRoomId[roomId].enemyGroup !== undefined) {
         this.physics.add.collider(this.#objectsByRoomId[roomId].enemyGroup, this.#enemyCollisionLayer);
 
-        this.physics.add.overlap(this.#player, this.#objectsByRoomId[roomId].enemyGroup, (player, enemy) => {
+        this.physics.add.overlap(this.#player, this.#objectsByRoomId[roomId].enemyGroup, () => {
           this.#player.hit(DIRECTION.DOWN, 1);
-          const enemyGameObject = enemy as CharacterGameObject;
-          enemyGameObject.hit(this.#player.direction, 1);
         });
 
         this.physics.add.collider(
@@ -155,6 +177,33 @@ export class GameScene extends Phaser.Scene {
             return true;
           },
         );
+
+        this.physics.add.overlap(
+          this.#objectsByRoomId[roomId].enemyGroup,
+          this.#player.weaponComponent.body,
+          (enemy) => {
+            (enemy as CharacterGameObject).hit(this.#player.direction, this.#player.weaponComponent.weaponDamage);
+          },
+        );
+
+        const enemyWeapons = this.#objectsByRoomId[roomId].enemyGroup.getChildren().flatMap((enemy) => {
+          const weaponComponent = WeaponComponent.getComponent<WeaponComponent>(enemy as GameObject);
+          if (weaponComponent !== undefined) {
+            return [weaponComponent.body];
+          }
+          return [];
+        });
+
+        if (enemyWeapons.length > 0) {
+          this.physics.add.overlap(enemyWeapons, this.#player, (enemyWeaponBody) => {
+            const weaponComponent = WeaponComponent.getComponent<WeaponComponent>(enemyWeaponBody as GameObject);
+            if (weaponComponent === undefined || weaponComponent.weapon === undefined) {
+              return;
+            }
+            weaponComponent.weapon.onCollisionCallback();
+            this.#player.hit(DIRECTION.DOWN, weaponComponent.weaponDamage);
+          });
+        }
       }
       if (this.#objectsByRoomId[roomId].pots.length > 0) {
         this.physics.add.collider(this.#objectsByRoomId[roomId].pots, this.#blockingGroup, (pot) => {
@@ -408,7 +457,11 @@ export class GameScene extends Phaser.Scene {
     const targetDoor = this.#objectsByRoomId[door.targetRoomId].doorMap[door.targetDoorId];
 
     door.disableObject();
+    this.#showObjectRoomById(targetDoor.roomId);
+
     targetDoor.disableObject();
+
+    this.#player.stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
 
     const targetDirection = getDirectionOfObjectFromAnotherObject(door, targetDoor);
     const doorDistance = {
@@ -477,6 +530,7 @@ export class GameScene extends Phaser.Scene {
       delay: CONFIG.ROOM_TRANSITION_PLAYER_INTO_NEXT_ROOM_DELAY,
       onComplete: () => {
         targetDoor.enableObject();
+        this.#hideObjectRoomById(door.roomId);
         this.#currentRoomId = targetDoor.roomId;
         this.#checkAllEnemiesAreDefeated();
         this.cameras.main.startFollow(this.#player);
@@ -536,5 +590,31 @@ export class GameScene extends Phaser.Scene {
         door.open();
       }
     });
+  }
+
+  #showObjectRoomById(roomId: number): void {
+    this.#objectsByRoomId[roomId].doors.forEach((door) => door.enableObject());
+    this.#objectsByRoomId[roomId].switches.forEach((button) => button.enableObject());
+    this.#objectsByRoomId[roomId].pots.forEach((pot) => pot.resetPosition());
+    this.#objectsByRoomId[roomId].chests.forEach((chest) => chest.enableObject());
+    if (this.#objectsByRoomId[roomId].enemyGroup === undefined) {
+      return;
+    }
+    for (const child of this.#objectsByRoomId[roomId].enemyGroup.getChildren()) {
+      (child as CharacterGameObject).enableObject();
+    }
+  }
+
+  #hideObjectRoomById(roomId: number): void {
+    this.#objectsByRoomId[roomId].doors.forEach((door) => door.disableObject());
+    this.#objectsByRoomId[roomId].switches.forEach((buton) => buton.disableObject());
+    this.#objectsByRoomId[roomId].pots.forEach((pot) => pot.disableObject());
+    this.#objectsByRoomId[roomId].chests.forEach((chest) => chest.disableObject());
+    if (this.#objectsByRoomId[roomId].enemyGroup === undefined) {
+      return;
+    }
+    for (const child of this.#objectsByRoomId[roomId].enemyGroup.getChildren()) {
+      (child as CharacterGameObject).disableObject();
+    }
   }
 }
