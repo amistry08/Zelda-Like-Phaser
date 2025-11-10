@@ -12,10 +12,13 @@ export class OpenChestState extends BaseCharacterState {
   onEnter(args: unknown[]): void {
     const chest = args[0] as Chest;
 
+    this._gameObject.invulnerableComponent.invulnerable = true;
+
     this._resetObjectVelocity();
     this._gameObject.animationComponent.playAnimation(`LIFT_${this._gameObject.direction}`, () => {
       EVENT_BUS.emit(CUSTOM_EVENTS.OPENED_CHEST, chest);
       EVENT_BUS.once(CUSTOM_EVENTS.DIALOG_CLOSE, () => {
+        this._gameObject.invulnerableComponent.invulnerable = false;
         this._stateMachine.setState(CHARACTER_STATES.IDLE_STATE);
       });
     });
