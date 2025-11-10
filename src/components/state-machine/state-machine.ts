@@ -27,6 +27,10 @@ export class StateMachine {
     this.#states = new Map();
   }
 
+  public currentStateName(): string | undefined {
+    return this.#currentState?.name;
+  }
+
   public update(): void {
     const queuedState = this.#changeStateQueue.shift();
     if (queuedState !== undefined) {

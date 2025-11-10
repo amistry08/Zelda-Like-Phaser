@@ -6,7 +6,7 @@ import { Player } from '../game-objects/player/player';
 import { Spider } from '../game-objects/enemies/spider';
 import { Wisp } from '../game-objects/enemies/wisp';
 import { CharacterGameObject } from '../game-objects/common/character-game-object';
-import { CHEST_REWARD_TO_DIALOG_MAP, DIRECTION, LEVEL_NAME } from '../common/common';
+import { CHEST_REWARD_TO_DIALOG_MAP, DIRECTION } from '../common/common';
 import * as CONFIG from '../common/config';
 import { Pot } from '../game-objects/objects/pot';
 import { Chest } from '../game-objects/objects/chest';
@@ -42,6 +42,7 @@ import { InventoryManager } from '../components/inventory/inventory-manager';
 import { CHARACTER_STATES } from '../components/state-machine/states/character/character-states';
 import { WeaponComponent } from '../components/game-object/weapon-component';
 import { DataManager } from '../common/data-manger';
+import { Drow } from '../game-objects/enemies/boss/drow';
 
 export class GameScene extends Phaser.Scene {
   #levelData!: LevelData;
@@ -72,6 +73,10 @@ export class GameScene extends Phaser.Scene {
     super({
       key: SCENE_KEYS.GAME_SCENE,
     });
+  }
+
+  get Player(): Player {
+    return this.#player;
   }
 
   public init(data: LevelData): void {
@@ -232,12 +237,14 @@ export class GameScene extends Phaser.Scene {
     EVENT_BUS.on(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkAllEnemiesAreDefeated, this);
     EVENT_BUS.on(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
     EVENT_BUS.on(CUSTOM_EVENTS.DIALOG_CLOSE, this.#handleDialogClose, this);
+    EVENT_BUS.on(CUSTOM_EVENTS.BOSS_DEFEATED, this.#handleBossDefeated, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EVENT_BUS.off(CUSTOM_EVENTS.OPENED_CHEST, this.#handleOpenChest, this);
       EVENT_BUS.off(CUSTOM_EVENTS.ENEMY_DESTROYED, this.#checkAllEnemiesAreDefeated, this);
       EVENT_BUS.off(CUSTOM_EVENTS.PLAYER_DEFEATED, this.#handlePlayerDefeatedEvent, this);
       EVENT_BUS.off(CUSTOM_EVENTS.DIALOG_CLOSE, this.#handleDialogClose, this);
+      EVENT_BUS.off(CUSTOM_EVENTS.BOSS_DEFEATED, this.#handleBossDefeated, this);
     });
   }
 
@@ -459,9 +466,12 @@ export class GameScene extends Phaser.Scene {
         });
         this.#objectsByRoomId[roomId].enemyGroup.add(wisp);
       }
-      if (tiledObject.type === 3) {
-        //TODO: create boss enemy
-        continue;
+      if (
+        tiledObject.type === 3 &&
+        !DataManager.instance.data.areaDetails[DataManager.instance.data.currentArea.name].bossDefeated
+      ) {
+        const drow = new Drow({ scene: this, position: { x: tiledObject.x, y: tiledObject.y } });
+        this.#objectsByRoomId[roomId].enemyGroup.add(drow);
       }
     }
   }
@@ -670,5 +680,9 @@ export class GameScene extends Phaser.Scene {
   #handleDialogClose(): void {
     this.#rewardItem.setVisible(false);
     this.scene.resume();
+  }
+
+  #handleBossDefeated(): void {
+    DataManager.instance.defeatedCurrentAreaBoss();
   }
 }

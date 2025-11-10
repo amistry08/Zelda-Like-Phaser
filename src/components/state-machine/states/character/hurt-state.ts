@@ -18,7 +18,7 @@ export class HurtState extends BaseCharacterState {
     gameObject: CharacterGameObject,
     hurtPushBackSpeed: number,
     onHurtCallback: () => void = () => undefined,
-    nextState = CHARACTER_STATES.IDLE_STATE,
+    nextState: string = CHARACTER_STATES.IDLE_STATE,
   ) {
     super(CHARACTER_STATES.HURT_STATE, gameObject);
     this.#hurtPushBackSpeed = hurtPushBackSpeed;
