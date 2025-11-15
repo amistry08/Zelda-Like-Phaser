@@ -40,9 +40,10 @@ export class GameOverScene extends Phaser.Scene {
     if (this.#controls.isActionKeyJustDown || this.#controls.isAttackKeyJustDown || this.#controls.isEnterKeyJustDown) {
       if (this.#selectedMenuOptionIndex === 1) {
         window.location.reload();
+        this.scene.start(SCENE_KEYS.MAIN_MENU_SCENE);
         return;
       }
-      this.scene.start(SCENE_KEYS.MAIN_MENU_SCENE);
+      this.scene.start(SCENE_KEYS.GAME_SCENE);
       return;
     }
     if (this.#controls.isUpJustDown) {
