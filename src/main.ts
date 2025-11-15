@@ -4,6 +4,7 @@ import { PreloadScene } from './scenes/preload-scene';
 import { GameScene } from './scenes/game-scene';
 import { UiScene } from './scenes/ui-scene';
 import { GameOverScene } from './scenes/game-over-scene';
+import { MainMenuScene } from './scenes/main-menu-scene';
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
@@ -29,6 +30,7 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
 const game = new Phaser.Game(gameConfig);
 
 game.scene.add(SCENE_KEYS.PRELOAD_SCENE, PreloadScene);
+game.scene.add(SCENE_KEYS.MAIN_MENU_SCENE, MainMenuScene);
 game.scene.add(SCENE_KEYS.GAME_SCENE, GameScene);
 game.scene.add(SCENE_KEYS.UI_SCENE, UiScene);
 game.scene.add(SCENE_KEYS.GAME_OVER_SCENE, GameOverScene);

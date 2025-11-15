@@ -382,7 +382,6 @@ export class GameScene extends Phaser.Scene {
 
   #createDoors(map: Phaser.Tilemaps.Tilemap, layerName: string, roomId: number): void {
     const validTiledObject = getTiledDoorObjectsFromMap(map, layerName);
-    console.log(validTiledObject);
     validTiledObject.forEach((tileObject) => {
       const door = new Door(this, tileObject, roomId);
       this.#objectsByRoomId[roomId].doors.push(door);
@@ -684,5 +683,6 @@ export class GameScene extends Phaser.Scene {
 
   #handleBossDefeated(): void {
     DataManager.instance.defeatedCurrentAreaBoss();
+    this.scene.start(SCENE_KEYS.MAIN_MENU_SCENE);
   }
 }

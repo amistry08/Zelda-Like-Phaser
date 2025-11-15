@@ -4,12 +4,14 @@ import { ASSET_KEYS, HEART_ANIMATIONS, HEART_TEXTURE_FRAME } from '../common/ass
 import { DataManager } from '../common/data-manger';
 import { CUSTOM_EVENTS, EVENT_BUS, PLAYER_HEALTH_UPDATE_TYPE, PlayerHealthUpdated } from '../common/event-bus';
 import { DEFAULT_UI_TEXT_STYLE } from '../common/common';
+import { KeyboardComponent } from '../components/input/keyboard-component';
 
 export class UiScene extends Phaser.Scene {
   #hunContainer!: Phaser.GameObjects.Container;
   #hearts!: Phaser.GameObjects.Sprite[];
   #dialogContainer!: Phaser.GameObjects.Container;
   #dailogContainerText!: Phaser.GameObjects.Text;
+  #controls!: KeyboardComponent;
 
   constructor() {
     super({
@@ -18,6 +20,10 @@ export class UiScene extends Phaser.Scene {
   }
 
   public create(): void {
+    if (!this.input.keyboard) {
+      return;
+    }
+    this.#controls = new KeyboardComponent(this.input.keyboard);
     this.#hunContainer = this.add.container(0, 0, []);
     this.#hearts = [];
 
@@ -58,6 +64,16 @@ export class UiScene extends Phaser.Scene {
     });
   }
 
+  public update(): void {
+    if (!this.#dialogContainer.visible) {
+      return;
+    }
+    if (this.#controls.isEnterKeyJustDown && this.#dialogContainer.visible) {
+      this.#dialogContainer.visible = false;
+      EVENT_BUS.emit(CUSTOM_EVENTS.DIALOG_CLOSE);
+    }
+  }
+
   public async updateHealthInHud(data: PlayerHealthUpdated): Promise<void> {
     if (data.type === PLAYER_HEALTH_UPDATE_TYPE.INCREASE) {
       return;
@@ -85,10 +101,5 @@ export class UiScene extends Phaser.Scene {
   public showDialog(messsage: string): void {
     this.#dialogContainer.visible = true;
     this.#dailogContainerText.setText(messsage);
-
-    this.time.delayedCall(3000, () => {
-      this.#dialogContainer.visible = false;
-      EVENT_BUS.emit(CUSTOM_EVENTS.DIALOG_CLOSE);
-    });
   }
 }

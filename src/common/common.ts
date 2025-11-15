@@ -41,9 +41,10 @@ export const DEFAULT_UI_TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 };
 
 export const CHEST_REWARD_TO_DIALOG_MAP = {
-  SMALL_KEY: 'You found a small key! You can use this to open locked doors.',
-  BOSS_KEY: 'You got the big key! This is the master key of the Dungeon. It can open many locks that small key cannot',
-  MAP: 'You got the Map! You can use it to see your current position and the rest of the dungeon (Press X)',
-  COMPASS: 'You found the Compass! Now you can pinpoint the lair of the dungeon;s evil master!',
-  NONE: '... The chest was empty',
+  SMALL_KEY: 'You found a small key! You can use this to open locked doors. Press Enter to continue',
+  BOSS_KEY: 'This is the master key of the Dungeon. It can open many locks that small key cannot',
+  COMPASS:
+    'An Inscription! Let none of the foes remain. Only then will the hidden casket in last chamber reveal itself.',
+  MAP: 'You found the Note! There is a hidden chest in the room!',
+  NOTHING: '... The chest was empty',
 } as const;
